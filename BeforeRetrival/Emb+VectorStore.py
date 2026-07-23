@@ -34,6 +34,7 @@ print("Creating Embeddings...")
 ollama_embeddings = OllamaEmbeddings(
     model="nomic-embed-text" 
 )
+
 Directory="./ollama_chroma_db"
 
 print("Creating Vector Store...")
