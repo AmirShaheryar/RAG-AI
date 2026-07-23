@@ -26,3 +26,23 @@ chunks=text_splitter.split_documents(document)
 
 print("len(chunks): ", len(chunks))
 print("First chunk: ", chunks[0].page_content)
+
+
+print("Creating Embeddings...")
+
+
+ollama_embeddings = OllamaEmbeddings(
+    model="nomic-embed-text" 
+)
+Directory="./ollama_chroma_db"
+
+print("Creating Vector Store...")
+
+
+vector_store=Chroma.from_documents(
+    documents=chunks,
+    embedding=ollama_embeddings,
+    persist_directory=Directory
+    )
+
+print("Persisting Vector Store...")
