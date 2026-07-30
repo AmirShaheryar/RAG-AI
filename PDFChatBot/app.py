@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings, ChatOllama
@@ -12,9 +14,8 @@ docs=PyPDFLoader("Health_RAG_Test_Document.pdf").load()
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=500, 
-    chunk_overlap=100
-    ) 
-
+    chunk_overlap=50
+    )
 splitted_text=text_splitter.split_documents(docs)
 
 #print(splitted_text[0].page_content)
@@ -26,12 +27,12 @@ embeddings = OllamaEmbeddings(
 
 vectorstore = FAISS.from_documents(splitted_text, embeddings)
 
-retriever = vectorstore.as_retriever(search_kwargs={"k": 2})
+retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
 llm = ChatOllama(model="llama3", temperature=0)
 
-prompt_template = """You are an AI assistant answering questions about a PDF document.
-Use ONLY the provided context to answer the question. If you don't know or if it's not mentioned in the context, say "Information not found in document."
+prompt_template = """You are an AI assistant answering questions about a document.
+Answer the question using strictly the provided context. If the answer cannot be determined from the context, say "Information not found in document."
 
 Context:
 {context}
@@ -59,7 +60,7 @@ test_questions = [
     "What are the key elements included in preventive care?",
     "What role does nutrition and exercise play in overall physical wellness according to the document?",
     "How many hours of sleep should a person get each night?",
-    "What type of medicine should I take for a fever?"
+    "What type of medicine should I take for a fever?",
     "Tell me about the importance of regular health check-ups and screenings.",
     "What are the recommended vaccinations for adults?",
     "What are the common symptoms of stress and how can they be managed?",
