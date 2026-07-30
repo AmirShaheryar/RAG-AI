@@ -8,6 +8,13 @@ from langchain_core.output_parsers import StrOutputParser
 
 docs=PyPDFLoader("Health_RAG_Test_Document.pdf").load()
 
-print(docs[0].page_content)
+#print(docs[0].page_content)
 
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=100, 
+    chunk_overlap=20
+    ) 
 
+splitted_text=text_splitter.split_documents(docs)
+
+print(splitted_text[0].page_content)
