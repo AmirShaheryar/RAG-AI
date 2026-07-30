@@ -1,36 +1,51 @@
+import os
+import tempfile
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 import langchain
+
 from langchain_community.document_loaders import PyPDFLoader
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from langchain_ollama import OllamaEmbeddings, ChatOllama
+
 from langchain_community.vectorstores import FAISS
+
 from langchain_core.prompts import PromptTemplate
+
 from langchain_core.runnables import RunnablePassthrough
+
 from langchain_core.output_parsers import StrOutputParser
+
 from langchain_classic.retrievers import MultiQueryRetriever
 
-docs=PyPDFLoader("Health_RAG_Test_Document.pdf").load()
+import streamlit as st
 
-#print(docs[0].page_content)
+st.set_page_config(page_title="Health RAG Test", page_icon=" 🏥 ")
+st.title("Health RAG Test")
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500, 
-    chunk_overlap=50
-    )
-splitted_text=text_splitter.split_documents(docs)
+st.caption("This is a test of the Health RAG system using a PDF document.")
 
-#print(splitted_text[0].page_content)
+@st.cache_resource(show_spinner="Processing and Indexing the PDF document...")
+def process_pdf(uploaded_file):
 
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        tmp_file.write(uploaded_file.getvalue())
+        tmp_path = tmp_file.name
 
-embeddings = OllamaEmbeddings(
-    model="nomic-embed-text"
-    )
-
-llm = ChatOllama(model="llama3", temperature=0)
-
-vectorstore = FAISS.from_documents(splitted_text, embeddings)
-
+    try:
+        # ORIGINAL LOGIC: Text loading, splitting, and vectorstore creation
+        docs = PyPDFLoader(tmp_path).load()
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        splitted_text = text_splitter.split_documents(docs)
+        
+        embeddings = OllamaEmbeddings(model="nomic-embed-text")
+        vectorstore = FAISS.from_documents(splitted_text, embeddings)
+        return vectorstore
+    finally:
+        os.remove(tmp_path)
 base_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 retriever = MultiQueryRetriever.from_llm(
