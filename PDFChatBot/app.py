@@ -46,14 +46,22 @@ def process_pdf(uploaded_file):
         return vectorstore
     finally:
         os.remove(tmp_path)
-base_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-retriever = MultiQueryRetriever.from_llm(
-    retriever=base_retriever, 
-    llm=llm
-)   
+st.sidebar.header("Document Upload")
 
-prompt_template = """You are an AI assistant answering questions about a document.
+uploaded_file = st.sidebar.file_uploader("Upload a Health PDF", type=["pdf"])
+
+if uploaded_file is not None:
+    vectorstore = process_pdf(uploaded_file)
+    
+    base_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+    llm = ChatOllama(
+        model="llama3", 
+        temperature=0
+        )
+    retriever = MultiQueryRetriever.from_llm(retriever=base_retriever, llm=llm)
+    
+    prompt_template = """You are an AI assistant answering questions about a document.
 Answer the question using strictly the provided context. If the answer cannot be determined from the context, say "Information not found in document."
 
 Context:
@@ -63,35 +71,63 @@ Question: {question}
 
 Answer:"""
 
-prompt = PromptTemplate.from_template(prompt_template)
+    prompt = PromptTemplate.from_template(prompt_template)
 
 
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
 
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
-
-rag_chain = (
-    {"context": retriever | format_docs, "question": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
+    rag_chain = (
+    RunnablePassthrough.assign(
+        source_docs=lambda x: retriever.invoke(x["question"])
     )
+    | RunnablePassthrough.assign(
+        context=lambda x: format_docs(x["source_docs"])
+    )
+    | RunnablePassthrough.assign(
+        answer=prompt | llm | StrOutputParser()
+    )
+    )
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-test_questions = [
-    "Why is working out good for your heart and body?",
-    
-    "How can someone avoid getting sick according to the document?",
-    
-    "What should I eat and drink to keep my body healthy?",
-    
-    "What daily habits help me stay emotionally strong?",
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            
+            if "sources" in message and message["sources"]:
+                with st.expander(" View Retrieved Source Chunks"):
+                    for idx, doc in enumerate(message["sources"], 1):
+                        page_num = doc.metadata.get("page", 0) + 1
+                        st.markdown(f"**Chunk {idx} (Page {page_num}):**")
+                        st.info(doc.page_content)
 
-    "What are the best outdoor sports mentioned in the PDF?"
+    if user_query := st.chat_input("Ask a question about the document..."):
+        
+        st.chat_message("user").markdown(user_query)
+        st.session_state.messages.append({"role": "user", "content": user_query})
 
-]
+        with st.chat_message("assistant"):
+            with st.spinner("Generating rephrased queries & retrieving answer..."):
+                result = rag_chain.invoke({"question": user_query})
+                
+                answer_text = result["answer"]
+                sources = result["source_docs"]
+                st.markdown(answer_text)
 
-for q in test_questions:
-    print(f"\n Question: {q}")
-    response = rag_chain.invoke(q)
-    print(f" Response: {response}")
-    print("-" * 50)
+                if sources:
+                    with st.expander("📚 View Retrieved Source Chunks"):
+                        for idx, doc in enumerate(sources, 1):
+                            page_num = doc.metadata.get("page", 0) + 1
+                            st.markdown(f"**Chunk {idx} (Page {page_num}):**")
+                            st.info(doc.page_content)
+
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": answer_text,
+            "sources": sources
+        })
+
+else:
+
+    st.info(" Please upload a PDF in the sidebar to get started.")
