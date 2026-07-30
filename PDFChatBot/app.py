@@ -36,7 +36,6 @@ def process_pdf(uploaded_file):
         tmp_path = tmp_file.name
 
     try:
-        # ORIGINAL LOGIC: Text loading, splitting, and vectorstore creation
         docs = PyPDFLoader(tmp_path).load()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         splitted_text = text_splitter.split_documents(docs)
@@ -50,6 +49,10 @@ def process_pdf(uploaded_file):
 st.sidebar.header("Document Upload")
 
 uploaded_file = st.sidebar.file_uploader("Upload a Health PDF", type=["pdf"])
+
+if st.sidebar.button("🗑️ Clear Chat History"):
+    st.session_state.messages = []
+    st.rerun()
 
 if uploaded_file is not None:
     vectorstore = process_pdf(uploaded_file)
