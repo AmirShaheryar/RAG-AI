@@ -60,6 +60,10 @@ test_questions = [
     "What role does nutrition and exercise play in overall physical wellness according to the document?",
     "How many hours of sleep should a person get each night?",
     "What type of medicine should I take for a fever?"
+    "Tell me about the importance of regular health check-ups and screenings.",
+    "What are the recommended vaccinations for adults?",
+    "What are the common symptoms of stress and how can they be managed?",
+    "Document is about health and wellness. Can you summarize the main points discussed in the document?",
 ]
 
 for q in test_questions:
