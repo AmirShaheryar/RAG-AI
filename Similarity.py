@@ -36,7 +36,8 @@ base_retriver=vector_store.as_retriever(
     search_kwargs={"k": 2}
     )
 
-query = "What is the main topic of this document?"
+query = "What is Core Workflow?"
+
 retrieved_chunks = base_retriver.invoke(query)
 
 for i in range(len(retrieved_chunks)):
