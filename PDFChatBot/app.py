@@ -88,7 +88,7 @@ def highlight_text_in_chunk(chunk_text, answer_text):
             highlighted_parts.append(html.escape(chunk_text[cursor:start]))
         match_text = html.escape(chunk_text[start:end])
         highlighted_parts.append(
-            f'<mark style="background-color:#ffeb3b;padding:1px 3px;border-radius:2px;">'
+            f'<mark style="background-color:#ffeb3b;color:#1a1a1a;padding:1px 3px;border-radius:2px;">'
             f"{match_text}</mark>"
         )
         cursor = end
@@ -128,7 +128,7 @@ def render_citations(answer_text, source_docs):
             highlighted = highlight_text_in_chunk(doc.page_content, answer_text)
             st.markdown(
                 (
-                    '<div style="background:#f0f2f6;padding:12px;border-radius:8px;'
+                    '<div style="background:#f0f2f6;color:#1a1a1a;padding:12px;border-radius:8px;'
                     'border-left:4px solid #4CAF50;line-height:1.6;">'
                     f"{highlighted}</div>"
                 ),
